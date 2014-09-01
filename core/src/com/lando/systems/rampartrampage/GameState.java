@@ -3,11 +3,14 @@ package com.lando.systems.rampartrampage;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.InputAdapter;
 import com.badlogic.gdx.Input.Keys;
+import com.badlogic.gdx.InputMultiplexer;
 import com.badlogic.gdx.graphics.*;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g3d.*;
 import com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute;
+import com.badlogic.gdx.graphics.g3d.attributes.TextureAttribute;
 import com.badlogic.gdx.graphics.g3d.environment.DirectionalLight;
+import com.badlogic.gdx.graphics.g3d.utils.CameraInputController;
 import com.badlogic.gdx.graphics.g3d.utils.ModelBuilder;
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.Disposable;
@@ -22,6 +25,8 @@ public class GameState implements Disposable {
     public SpriteBatch batch;
     public ModelBatch modelBatch;
 
+    public Texture texture;
+
     public Environment env;
     public Model axes;
     public Model model;
@@ -30,6 +35,7 @@ public class GameState implements Disposable {
     public Camera camera;
     public InputHandler inputHandler;
     public InputAdapter inputAdapter;
+    public CameraInputController camController;
 
 
     public GameState() {
@@ -42,6 +48,7 @@ public class GameState implements Disposable {
 
     public void update(float delta) {
         inputHandler.handleInput(delta);
+        camController.update();
         camera.update();
     }
 
@@ -80,9 +87,10 @@ public class GameState implements Disposable {
         final long axisAttrs = VertexAttributes.Usage.Position | VertexAttributes.Usage.Normal;
         axes = modelBuilder.createXYZCoordinates(axisLength, axisMaterial, axisAttrs);
 
+        texture = new Texture("badlogic.jpg");
         final float boxSize = 1;
-        final Material boxMaterial = new Material(ColorAttribute.createDiffuse(Color.WHITE));
-        final long boxAttrs = VertexAttributes.Usage.Position | VertexAttributes.Usage.Normal;
+        final Material boxMaterial = new Material(TextureAttribute.createDiffuse(texture));
+        final long boxAttrs = VertexAttributes.Usage.Position | VertexAttributes.Usage.Normal | VertexAttributes.Usage.TextureCoordinates;
         model = modelBuilder.createBox(boxSize, boxSize, boxSize, boxMaterial, boxAttrs);
 
         modelInstances = new Array<ModelInstance>();
@@ -90,8 +98,8 @@ public class GameState implements Disposable {
         modelInstances.add(new ModelInstance(model));
 
         env = new Environment();
-        env.set(new ColorAttribute(ColorAttribute.AmbientLight, 0.2f, 0.2f, 0.2f, 1));
-        env.add(new DirectionalLight().set(Color.PURPLE, -10, 10, 10));
+        env.set(new ColorAttribute(ColorAttribute.AmbientLight, 0.4f, 0.4f, 0.4f, 1));
+        env.add(new DirectionalLight().set(Color.PURPLE, -5, 5, 5));
         // ...
     }
 
@@ -100,35 +108,21 @@ public class GameState implements Disposable {
 
         inputAdapter = new InputAdapter() {
             @Override
-            public boolean keyDown (int keycode) {
-                return false;
-            }
-
-            @Override
             public boolean keyUp (int keycode) {
                 switch (keycode) {
                     case Keys.ESCAPE: Gdx.app.exit(); break;
                 }
                 return false;
             }
-
-            @Override
-            public boolean touchDown (int screenX, int screenY, int pointer, int button) {
-                return false;
-            }
-
-            @Override
-            public boolean touchUp (int screenX, int screenY, int pointer, int button) {
-                return false;
-            }
-
-            @Override
-            public boolean scrolled (int amount) {
-                return false;
-            }
         };
 
-        Gdx.input.setInputProcessor(inputAdapter);
+        camController = new CameraInputController(camera);
+
+        InputMultiplexer inputMux = new InputMultiplexer();
+        inputMux.addProcessor(inputAdapter);
+        inputMux.addProcessor(camController);
+
+        Gdx.input.setInputProcessor(inputMux);
     }
 
 }
