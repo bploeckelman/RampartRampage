@@ -32,11 +32,13 @@ public class GameState implements Disposable {
     public Environment env;
     public Model axes;
     public Model model;
+    public Model ground;
     public Array<ModelInstance> modelInstances;
 
     public Camera currentCamera;
     public DebugCamera camera1;
     public DebugCamera camera2;
+    public DebugCamera camera3;
     public InputHandler inputHandler;
     public InputAdapter inputAdapter;
     public CameraInputController camController;
@@ -55,8 +57,10 @@ public class GameState implements Disposable {
         camController.update();
         camera1.update(true);
         camera2.update(true);
+        camera3.update(true);
         camera1.updateFrustumModel();
         camera2.updateFrustumModel();
+        camera3.updateFrustumModel();
     }
 
     public void render() {
@@ -69,11 +73,13 @@ public class GameState implements Disposable {
         }
         camera1.render(modelBatch);
         camera2.render(modelBatch);
+        camera3.render(modelBatch);
         modelBatch.end();
     }
 
     @Override
     public void dispose() {
+        camera3.dispose();
         camera2.dispose();
         camera1.dispose();
         model.dispose();
@@ -84,7 +90,7 @@ public class GameState implements Disposable {
 
     private void initializeScene() {
         camera1 = new DebugCamera(Const.default_fov, Const.viewport_width, Const.viewport_height);
-        camera1.position.set(0, 0, 15);
+        camera1.position.set(10, 5, 10);
         camera1.lookAt(0, 0, 0);
         camera1.near = 1;
         camera1.far = 100;
@@ -93,7 +99,7 @@ public class GameState implements Disposable {
         camera1.updateFrustumModel();
 
         camera2 = new DebugCamera(Const.default_fov, 100, 100);
-        camera2.position.set(15, 0, 0);
+        camera2.position.set(15, 5, 0);
         camera2.lookAt(0, 0, 0);
         camera2.near = 1;
         camera2.far = 100;
@@ -102,7 +108,19 @@ public class GameState implements Disposable {
         camera2.setFrustumColor(new Color(1, 0, 1, 0.5f));
         camera2.updateFrustumModel();
 
+        camera3 = new DebugCamera(Const.default_fov, 100, 100);
+        camera3.position.set(0, 5, 15);
+        camera3.lookAt(0, 0, 0);
+        camera3.near = 1;
+        camera3.far = 100;
+        camera3.show();
+        camera3.update();
+        camera3.setFrustumColor(new Color(0, 1, 1, 0.5f));
+        camera3.updateFrustumModel();
+
         currentCamera = camera1;
+        currentCamera.near = 1;
+        currentCamera.far = 1000;
 
         final ModelBuilder modelBuilder = new ModelBuilder();
 
@@ -117,9 +135,18 @@ public class GameState implements Disposable {
         final long boxAttrs = VertexAttributes.Usage.Position | VertexAttributes.Usage.Normal | VertexAttributes.Usage.TextureCoordinates;
         model = modelBuilder.createBox(boxSize, boxSize, boxSize, boxMaterial, boxAttrs);
 
+        final int xDivisions = 100;
+        final int zDivisions = 100;
+        final float xSize = 1;
+        final float zSize = 1;
+        final Material groundMaterial = new Material(ColorAttribute.createDiffuse(bg.cpy()));
+        final long groundAttrs = VertexAttributes.Usage.Position | VertexAttributes.Usage.Normal | VertexAttributes.Usage.Color;
+        ground = modelBuilder.createLineGrid(xDivisions, zDivisions, xSize, zSize, groundMaterial, groundAttrs);
+
         modelInstances = new Array<ModelInstance>();
         modelInstances.add(new ModelInstance(axes));
         modelInstances.add(new ModelInstance(model));
+        modelInstances.add(new ModelInstance(ground));
 
         env = new Environment();
         env.set(new ColorAttribute(ColorAttribute.AmbientLight, 0.4f, 0.4f, 0.4f, 1));
@@ -159,18 +186,34 @@ public class GameState implements Disposable {
             currentCamera = camera2;
             camera1.show();
             camera2.hide();
+            camera3.show();
             camera1.near = 1;
             camera1.far = 100;
+            camera3.near = 1;
+            camera3.far = 100;
         } else if (currentCamera == camera2) {
+            currentCamera = camera3;
+            camera1.show();
+            camera2.show();
+            camera3.hide();
+            camera1.near = 1;
+            camera1.far = 100;
+            camera2.near = 1;
+            camera2.far = 100;
+        } else if (currentCamera == camera3) {
             currentCamera = camera1;
             camera1.hide();
             camera2.show();
+            camera3.show();
             camera2.near = 1;
             camera2.far = 100;
+            camera3.near = 1;
+            camera3.far = 100;
         }
 
         camera1.update(true);
         camera2.update(true);
+        camera3.update(true);
         camController.camera = currentCamera;
 
         // So that other cameras are fully visible
