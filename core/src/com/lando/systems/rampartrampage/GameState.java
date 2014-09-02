@@ -162,8 +162,9 @@ public class GameState implements Disposable {
                     case Keys.ESCAPE: Gdx.app.exit(); break;
                     case Keys.SPACE: switchCameras(); break;
                     case Keys.TAB:
-                        camera1.updateFrustumModel();
-                        camera2.updateFrustumModel();
+                        camera1.hide();
+                        camera2.hide();
+                        camera3.hide();
                         break;
                 }
                 return false;
