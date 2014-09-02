@@ -68,9 +68,7 @@ public class GameState implements Disposable {
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT | GL20.GL_DEPTH_BUFFER_BIT);
 
         modelBatch.begin(currentCamera);
-        for (ModelInstance inst : modelInstances) {
-            modelBatch.render(inst, env);
-        }
+        modelBatch.render(modelInstances, env);
         camera1.render(modelBatch);
         camera2.render(modelBatch);
         camera3.render(modelBatch);
