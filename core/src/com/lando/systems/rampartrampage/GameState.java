@@ -14,6 +14,7 @@ import com.badlogic.gdx.graphics.g3d.attributes.TextureAttribute;
 import com.badlogic.gdx.graphics.g3d.environment.DirectionalLight;
 import com.badlogic.gdx.graphics.g3d.utils.CameraInputController;
 import com.badlogic.gdx.graphics.g3d.utils.ModelBuilder;
+import com.badlogic.gdx.math.Quaternion;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.utils.Array;
@@ -38,7 +39,7 @@ public class GameState implements Disposable {
 
     public Environment env;
     public Model axes;
-    public Model model;
+    public Model box;
     public Model ground;
     public Array<ModelInstance> modelInstances;
 
@@ -51,6 +52,10 @@ public class GameState implements Disposable {
     public InputHandler inputHandler;
     public InputAdapter inputAdapter;
     public CameraInputController camController;
+
+    final Vector3 mouse_screen = new Vector3();
+    final Vector3 mouse_world = new Vector3();
+
 
 
     public GameState() {
@@ -98,7 +103,7 @@ public class GameState implements Disposable {
         camera3.dispose();
         camera2.dispose();
         camera1.dispose();
-        model.dispose();
+        box.dispose();
         axes.dispose();
         batch.dispose();
         modelBatch.dispose();
@@ -152,7 +157,7 @@ public class GameState implements Disposable {
         final float boxSize = 1;
         final Material boxMaterial = new Material(TextureAttribute.createDiffuse(texture));
         final long boxAttrs = VertexAttributes.Usage.Position | VertexAttributes.Usage.Normal | VertexAttributes.Usage.TextureCoordinates;
-        model = modelBuilder.createBox(boxSize, boxSize, boxSize, boxMaterial, boxAttrs);
+        box = modelBuilder.createBox(boxSize, boxSize, boxSize, boxMaterial, boxAttrs);
 
         final int xDivisions = 100;
         final int zDivisions = 100;
@@ -164,7 +169,7 @@ public class GameState implements Disposable {
 
         modelInstances = new Array<ModelInstance>();
         modelInstances.add(new ModelInstance(axes));
-        modelInstances.add(new ModelInstance(model));
+        modelInstances.add(new ModelInstance(box));
         modelInstances.add(new ModelInstance(ground));
 
         env = new Environment();
@@ -194,6 +199,21 @@ public class GameState implements Disposable {
                         }
                         break;
                 }
+                return false;
+            }
+
+            @Override
+            public boolean touchDown (int screenX, int screenY, int pointer, int button) {
+                // TODO : extract screenZ to a var
+                mouse_screen.set(screenX, screenY, 0.95f);
+                mouse_world.set(mouse_screen);
+                currentCamera.unproject(mouse_world);
+                return false;
+            }
+
+            @Override
+            public boolean touchUp (int screenX, int screenY, int pointer, int button) {
+                spawnBox(mouse_world);
                 return false;
             }
         };
@@ -282,4 +302,24 @@ public class GameState implements Disposable {
         currentCamera.far = 1000;
     }
 
+    final Quaternion unit_quaternion = new Quaternion();
+    final Vector3 unit_vector3 = new Vector3(1,1,1);
+    private void spawnBox(Vector3 position) {
+        this.spawnBox(position, unit_vector3);
+    }
+
+    private void spawnBox(Vector3 position, Vector3 scale) {
+        this.spawnBox(position, scale, unit_quaternion);
+    }
+
+    private void spawnBox(Vector3 position, Vector3 scale, Quaternion rotation) {
+        Gdx.app.log("SPAWN_BOX", "pos: " + position.toString() + ", scale: " + scale.toString() + ", rot: " + rotation.toString());
+
+        ModelInstance boxInstance = new ModelInstance(box);
+        boxInstance.nodes.get(0).translation.set(position);
+        boxInstance.nodes.get(0).scale.set(scale);
+        boxInstance.nodes.get(0).rotation.set(rotation);
+        boxInstance.calculateTransforms();
+        modelInstances.add(boxInstance);
+    }
 }
