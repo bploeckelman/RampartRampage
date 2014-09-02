@@ -16,21 +16,7 @@ public class InputHandler {
     }
 
     public void handleInput(float delta) {
-        final float move_step = 1;
-        final float move_amount = move_step * delta;
-
-        if (Gdx.input.isKeyPressed(Keys.S)) {
-            gameState.camera.position.add(0, 0, move_amount);
-        }
-        if (Gdx.input.isKeyPressed(Keys.W)) {
-            gameState.camera.position.sub(0, 0, move_amount);
-        }
-        if (Gdx.input.isKeyPressed(Keys.A)) {
-            gameState.camera.position.sub(move_amount, 0, 0);
-        }
-        if (Gdx.input.isKeyPressed(Keys.D)) {
-            gameState.camera.position.add(move_amount, 0, 0);
-        }
+        // TODO handle any input polling requirements here
     }
 
 }
