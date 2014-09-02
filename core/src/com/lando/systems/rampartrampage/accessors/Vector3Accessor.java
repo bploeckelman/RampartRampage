@@ -23,7 +23,7 @@ public class Vector3Accessor implements TweenAccessor<Vector3> {
                 returnValues[0] = target.x;
                 returnValues[1] = target.y;
                 returnValues[2] = target.z;
-                return 2;
+                return 3;
             default: assert false; return -1;
         }
     }
