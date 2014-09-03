@@ -9,7 +9,9 @@ import com.badlogic.gdx.InputMultiplexer;
 import com.badlogic.gdx.graphics.*;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g3d.*;
+import com.badlogic.gdx.graphics.g3d.attributes.BlendingAttribute;
 import com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute;
+import com.badlogic.gdx.graphics.g3d.attributes.IntAttribute;
 import com.badlogic.gdx.graphics.g3d.attributes.TextureAttribute;
 import com.badlogic.gdx.graphics.g3d.environment.DirectionalLight;
 import com.badlogic.gdx.graphics.g3d.utils.CameraInputController;
@@ -41,6 +43,8 @@ public class GameState implements Disposable {
     public Model axes;
     public Model box;
     public Model ground;
+    public Model selectorModel;
+    public ModelInstance selectorInstance;
     public Array<ModelInstance> modelInstances;
 
     public Camera currentCamera;
@@ -52,10 +56,6 @@ public class GameState implements Disposable {
     public InputHandler inputHandler;
     public InputAdapter inputAdapter;
     public CameraInputController camController;
-
-    final Vector3 mouse_screen = new Vector3();
-    final Vector3 mouse_world = new Vector3();
-
 
 
     public GameState() {
@@ -76,6 +76,10 @@ public class GameState implements Disposable {
         inputHandler.handleInput(delta);
         camController.update();
 
+        selectorInstance.nodes.get(0).translation.set(inputHandler.mouse_world);
+        selectorInstance.nodes.get(0).translation.y = 0;
+        selectorInstance.calculateTransforms();
+
         camera1.update(true);
         camera2.update(true);
         camera3.update(true);
@@ -92,6 +96,8 @@ public class GameState implements Disposable {
 
         modelBatch.begin(currentCamera);
         modelBatch.render(modelInstances, env);
+        modelBatch.render(selectorInstance, env);
+
         camera1.render(modelBatch);
         camera2.render(modelBatch);
         camera3.render(modelBatch);
@@ -105,6 +111,8 @@ public class GameState implements Disposable {
         camera1.dispose();
         box.dispose();
         axes.dispose();
+        ground.dispose();
+        selectorModel.dispose();
         batch.dispose();
         modelBatch.dispose();
     }
@@ -167,6 +175,25 @@ public class GameState implements Disposable {
         final long groundAttrs = VertexAttributes.Usage.Position | VertexAttributes.Usage.Normal | VertexAttributes.Usage.Color;
         ground = modelBuilder.createLineGrid(xDivisions, zDivisions, xSize, zSize, groundMaterial, groundAttrs);
 
+        final Material selectorMaterial = new Material(
+                ColorAttribute.createDiffuse(1, 1, 1, 1),
+                TextureAttribute.createDiffuse(texture),
+                IntAttribute.createCullFace(GL20.GL_NONE));//,
+//                new BlendingAttribute(true, 0.7f));
+        final long selectorAttrs = VertexAttributes.Usage.Position
+//                                 | VertexAttributes.Usage.Normal
+                                 | VertexAttributes.Usage.TextureCoordinates
+                                 | VertexAttributes.Usage.Color;
+        selectorModel = modelBuilder.createRect(
+                0, 0, 0,
+                1, 0, 0,
+                1, 0, 1,
+                0, 0, 1,
+                0, 1, 0,
+                selectorMaterial,
+                selectorAttrs);
+        selectorInstance = new ModelInstance(selectorModel);
+
         modelInstances = new Array<ModelInstance>();
         modelInstances.add(new ModelInstance(axes));
         modelInstances.add(new ModelInstance(box));
@@ -204,16 +231,12 @@ public class GameState implements Disposable {
 
             @Override
             public boolean touchDown (int screenX, int screenY, int pointer, int button) {
-                // TODO : extract screenZ to a var
-                mouse_screen.set(screenX, screenY, 0.95f);
-                mouse_world.set(mouse_screen);
-                currentCamera.unproject(mouse_world);
                 return false;
             }
 
             @Override
             public boolean touchUp (int screenX, int screenY, int pointer, int button) {
-                spawnBox(mouse_world);
+                spawnBox(inputHandler.mouse_world);
                 return false;
             }
         };
