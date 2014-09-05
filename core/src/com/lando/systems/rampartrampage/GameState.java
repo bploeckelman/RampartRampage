@@ -176,12 +176,12 @@ public class GameState implements Disposable {
         ground = modelBuilder.createLineGrid(xDivisions, zDivisions, xSize, zSize, groundMaterial, groundAttrs);
 
         final Material selectorMaterial = new Material(
-                ColorAttribute.createDiffuse(1, 1, 1, 1),
+                ColorAttribute.createDiffuse(1, 1, 1, 0.7f),
                 TextureAttribute.createDiffuse(texture),
-                IntAttribute.createCullFace(GL20.GL_NONE));//,
-//                new BlendingAttribute(true, 0.7f));
+                IntAttribute.createCullFace(GL20.GL_NONE),
+                new BlendingAttribute(true, 0.7f));
         final long selectorAttrs = VertexAttributes.Usage.Position
-//                                 | VertexAttributes.Usage.Normal
+                                 | VertexAttributes.Usage.Normal
                                  | VertexAttributes.Usage.TextureCoordinates
                                  | VertexAttributes.Usage.Color;
         selectorModel = modelBuilder.createRect(
