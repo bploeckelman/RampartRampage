@@ -23,7 +23,7 @@ public class InputHandler {
         final float screenX = gameState.currentCamera.viewportWidth / 2f;
         final float screenY = gameState.currentCamera.viewportHeight / 2f;
         // TODO : raytrace from screenZ = 0 to 1 and pick nearest intersected scene object
-        final float screenZ = 0.5f;
+        final float screenZ = 0.85f;
 //        final float screenX = Gdx.input.getX();
 //        final float screenY = Gdx.input.getY();
 //        final float screenH = Gdx.graphics.getHeight();

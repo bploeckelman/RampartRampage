@@ -178,10 +178,10 @@ public class GameState implements Disposable {
         final Material selectorMaterial = new Material(
                 ColorAttribute.createDiffuse(1, 1, 1, 0.7f),
                 TextureAttribute.createDiffuse(texture),
-                IntAttribute.createCullFace(GL20.GL_NONE),
-                new BlendingAttribute(true, 0.7f));
+                IntAttribute.createCullFace(GL20.GL_NONE));//,
+//                new BlendingAttribute(true, 0.7f));
         final long selectorAttrs = VertexAttributes.Usage.Position
-                                 | VertexAttributes.Usage.Normal
+//                                 | VertexAttributes.Usage.Normal
                                  | VertexAttributes.Usage.TextureCoordinates
                                  | VertexAttributes.Usage.Color;
         selectorModel = modelBuilder.createRect(
@@ -213,18 +213,19 @@ public class GameState implements Disposable {
             public boolean keyUp (int keycode) {
                 switch (keycode) {
                     case Keys.ESCAPE: Gdx.app.exit(); break;
-                    case Keys.SPACE: switchCameras(); break;
-                    case Keys.TAB:
-                        if (Gdx.input.isKeyPressed(Keys.SHIFT_LEFT)) {
-                            camera1.hide();
-                            camera2.hide();
-                            camera3.hide();
-                        } else {
-                            camera1.show();
-                            camera2.show();
-                            camera3.show();
-                        }
-                        break;
+                    case Keys.TAB: switchCameras(); break;
+                    case Keys.SPACE: spawnBox(new Vector3(inputHandler.mouse_world.x, 0, inputHandler.mouse_world.z)); break;
+//                    case Keys.TAB:
+//                        if (Gdx.input.isKeyPressed(Keys.SHIFT_LEFT)) {
+//                            camera1.hide();
+//                            camera2.hide();
+//                            camera3.hide();
+//                        } else {
+//                            camera1.show();
+//                            camera2.show();
+//                            camera3.show();
+//                        }
+//                        break;
                 }
                 return false;
             }
@@ -236,7 +237,6 @@ public class GameState implements Disposable {
 
             @Override
             public boolean touchUp (int screenX, int screenY, int pointer, int button) {
-                spawnBox(inputHandler.mouse_world);
                 return false;
             }
         };
@@ -327,6 +327,7 @@ public class GameState implements Disposable {
 
     final Quaternion unit_quaternion = new Quaternion();
     final Vector3 unit_vector3 = new Vector3(1,1,1);
+    // TODO :
     private void spawnBox(Vector3 position) {
         this.spawnBox(position, unit_vector3);
     }
