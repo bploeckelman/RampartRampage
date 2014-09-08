@@ -24,6 +24,7 @@ import com.badlogic.gdx.utils.Disposable;
 import com.lando.systems.rampartrampage.accessors.ColorAccessor;
 import com.lando.systems.rampartrampage.accessors.Vector2Accessor;
 import com.lando.systems.rampartrampage.accessors.Vector3Accessor;
+import com.lando.systems.rampartrampage.scene.Scene;
 import com.lando.systems.rampartrampage.util.DebugCamera;
 import com.lando.systems.rampartrampage.util.InputHandler;
 
@@ -47,15 +48,10 @@ public class GameState implements Disposable {
     public ModelInstance selectorInstance;
     public Array<ModelInstance> modelInstances;
 
-    public Camera currentCamera;
-    public Camera transitionCamera;
-    public DebugCamera camera1;
-    public DebugCamera camera2;
-    public DebugCamera camera3;
+    public Scene scene;
 
     public InputHandler inputHandler;
     public InputAdapter inputAdapter;
-    public CameraInputController camController;
 
 
     public GameState() {
@@ -74,41 +70,31 @@ public class GameState implements Disposable {
         Global.tweenManager.update(delta);
 
         inputHandler.handleInput(delta);
-        camController.update();
 
         selectorInstance.nodes.get(0).translation.set(inputHandler.mouse_world);
         selectorInstance.nodes.get(0).translation.y = 0;
         selectorInstance.calculateTransforms();
 
-        camera1.update(true);
-        camera2.update(true);
-        camera3.update(true);
-        camera1.updateFrustumModel();
-        camera2.updateFrustumModel();
-        camera3.updateFrustumModel();
-
-        transitionCamera.update(true);
+        scene.update(delta);
     }
 
     public void render() {
         Gdx.gl.glClearColor(bg.r, bg.g, bg.b, bg.a);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT | GL20.GL_DEPTH_BUFFER_BIT);
 
-        modelBatch.begin(currentCamera);
+        modelBatch.begin(scene.currentCamera);
         modelBatch.render(modelInstances, env);
         modelBatch.render(selectorInstance, env);
 
-        camera1.render(modelBatch);
-        camera2.render(modelBatch);
-        camera3.render(modelBatch);
+        scene.camera1.render(modelBatch);
+        scene.camera2.render(modelBatch);
+        scene.camera3.render(modelBatch);
         modelBatch.end();
     }
 
     @Override
     public void dispose() {
-        camera3.dispose();
-        camera2.dispose();
-        camera1.dispose();
+        scene.dispose();
         box.dispose();
         axes.dispose();
         ground.dispose();
@@ -118,41 +104,7 @@ public class GameState implements Disposable {
     }
 
     private void initializeScene() {
-        final float frustum_alpha = 0.6f;
-
-        camera1 = new DebugCamera(Const.default_fov, Const.viewport_width, Const.viewport_height);
-        camera1.position.set(10, 2, 0);
-        camera1.lookAt(0, 0, 0);
-        camera1.near = 1;
-        camera1.far = 25;
-        camera1.update();
-        camera1.setFrustumColor(new Color(1, 0, 0, frustum_alpha));
-        camera1.updateFrustumModel();
-
-        camera2 = new DebugCamera(Const.default_fov, Const.viewport_width, Const.viewport_height);
-        camera2.position.set(10, 1, 10);
-        camera2.lookAt(0, 0, 0);
-        camera2.near = 1;
-        camera2.far = 50;
-        camera2.update();
-        camera2.setFrustumColor(new Color(0, 1, 0, frustum_alpha));
-        camera2.updateFrustumModel();
-
-        camera3 = new DebugCamera(Const.default_fov, Const.viewport_width, Const.viewport_height);
-        camera3.position.set(0, 3, 10);
-        camera3.lookAt(0, 0, 0);
-        camera3.near = 1;
-        camera3.far = 75;
-        camera3.update();
-        camera3.setFrustumColor(new Color(0, 0, 1, frustum_alpha));
-        camera3.updateFrustumModel();
-
-        transitionCamera = new DebugCamera(Const.default_fov, Const.viewport_width, Const.viewport_height);
-        transitionCamera.near = 1;
-        transitionCamera.far = 1000;
-        transitionCamera.update();
-
-        currentCamera = camera1;
+        scene = new Scene();
 
         final ModelBuilder modelBuilder = new ModelBuilder();
 
@@ -213,19 +165,10 @@ public class GameState implements Disposable {
             public boolean keyUp (int keycode) {
                 switch (keycode) {
                     case Keys.ESCAPE: Gdx.app.exit(); break;
-                    case Keys.TAB: switchCameras(); break;
-                    case Keys.SPACE: spawnBox(new Vector3(inputHandler.mouse_world.x, 0, inputHandler.mouse_world.z)); break;
-//                    case Keys.TAB:
-//                        if (Gdx.input.isKeyPressed(Keys.SHIFT_LEFT)) {
-//                            camera1.hide();
-//                            camera2.hide();
-//                            camera3.hide();
-//                        } else {
-//                            camera1.show();
-//                            camera2.show();
-//                            camera3.show();
-//                        }
-//                        break;
+                    case Keys.TAB: scene.switchCameras(); break;
+                    case Keys.SPACE:
+                        spawnBox(new Vector3(inputHandler.mouse_world.x, 0, inputHandler.mouse_world.z));
+                        break;
                 }
                 return false;
             }
@@ -241,88 +184,11 @@ public class GameState implements Disposable {
             }
         };
 
-        camController = new CameraInputController(camera1);
-
         InputMultiplexer inputMux = new InputMultiplexer();
         inputMux.addProcessor(inputAdapter);
-        inputMux.addProcessor(camController);
+        inputMux.addProcessor(scene.camController);
 
         Gdx.input.setInputProcessor(inputMux);
-    }
-
-    private void switchCameras() {
-        currentCamera.far = 100;
-        transitionCamera.position.set(currentCamera.position);
-        transitionCamera.direction.set(currentCamera.direction);
-        transitionCamera.up.set(currentCamera.up);
-
-        final TweenEquation easing = Back.INOUT;
-        final float duration = 3;
-
-        if (currentCamera == camera1) {
-//            camera1.show();
-//            camera3.show();
-
-            Timeline.createParallel()
-                    .push(Tween.to(transitionCamera.position,  Vector3Accessor.XYZ, duration).target(camera2.position.x,  camera2.position.y,  camera2.position.z) .ease(easing))
-                    .push(Tween.to(transitionCamera.direction, Vector3Accessor.XYZ, duration).target(camera2.direction.x, camera2.direction.y, camera2.direction.z).ease(easing))
-                    .push(Tween.to(transitionCamera.up,        Vector3Accessor.XYZ, duration).target(camera2.up.x,        camera2.up.y,        camera2.up.z)       .ease(easing))
-                    .setCallback(new TweenCallback() {
-                        @Override
-                        public void onEvent(int type, BaseTween<?> source) {
-                            camera2.hide();
-                            currentCamera = camera2;
-                            camController.camera = currentCamera;
-                        }
-                    })
-                    .start(Global.tweenManager);
-        } else if (currentCamera == camera2) {
-//            camera1.show();
-//            camera2.show();
-
-            Timeline.createParallel()
-                    .push(Tween.to(transitionCamera.position,  Vector3Accessor.XYZ, duration).target(camera3.position.x,  camera3.position.y,  camera3.position.z) .ease(easing))
-                    .push(Tween.to(transitionCamera.direction, Vector3Accessor.XYZ, duration).target(camera3.direction.x, camera3.direction.y, camera3.direction.z).ease(easing))
-                    .push(Tween.to(transitionCamera.up,        Vector3Accessor.XYZ, duration).target(camera3.up.x,        camera3.up.y,        camera3.up.z)       .ease(easing))
-                    .setCallback(new TweenCallback() {
-                        @Override
-                        public void onEvent(int type, BaseTween<?> source) {
-                            camera3.hide();
-                            currentCamera = camera3;
-                            camController.camera = currentCamera;
-                        }
-                    })
-                    .start(Global.tweenManager);
-        } else if (currentCamera == camera3) {
-//            camera2.show();
-//            camera3.show();
-
-            Timeline.createParallel()
-                    .push(Tween.to(transitionCamera.position,  Vector3Accessor.XYZ, duration).target(camera1.position.x,  camera1.position.y,  camera1.position.z) .ease(easing))
-                    .push(Tween.to(transitionCamera.direction, Vector3Accessor.XYZ, duration).target(camera1.direction.x, camera1.direction.y, camera1.direction.z).ease(easing))
-                    .push(Tween.to(transitionCamera.up,        Vector3Accessor.XYZ, duration).target(camera1.up.x,        camera1.up.y,        camera1.up.z)       .ease(easing))
-                    .setCallback(new TweenCallback() {
-                        @Override
-                        public void onEvent(int type, BaseTween<?> source) {
-                            camera1.hide();
-                            currentCamera = camera1;
-                            camController.camera = currentCamera;
-                        }
-                    })
-                    .start(Global.tweenManager);
-        }
-
-        currentCamera = transitionCamera;
-        transitionCamera.update();
-
-        camera1.update(true);
-        camera2.update(true);
-        camera3.update(true);
-
-        camController.camera = currentCamera;
-
-        // So that other cameras are fully visible
-        currentCamera.far = 1000;
     }
 
     final Quaternion unit_quaternion = new Quaternion();

@@ -20,8 +20,8 @@ public class InputHandler {
     }
 
     public void handleInput(float delta) {
-        final float screenX = gameState.currentCamera.viewportWidth / 2f;
-        final float screenY = gameState.currentCamera.viewportHeight / 2f;
+        final float screenX = gameState.scene.currentCamera.viewportWidth / 2f;
+        final float screenY = gameState.scene.currentCamera.viewportHeight / 2f;
         // TODO : raytrace from screenZ = 0 to 1 and pick nearest intersected scene object
         final float screenZ = 0.85f;
 //        final float screenX = Gdx.input.getX();
@@ -32,7 +32,7 @@ public class InputHandler {
 
         mouse_screen.set(screenX, screenY, screenZ);
         mouse_world.set(mouse_screen);
-        gameState.currentCamera.unproject(mouse_world);
+        gameState.scene.currentCamera.unproject(mouse_world);
     }
 
 }
