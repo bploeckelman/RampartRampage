@@ -12,8 +12,11 @@ import com.badlogic.gdx.graphics.g3d.attributes.TextureAttribute;
 import com.badlogic.gdx.graphics.g3d.environment.DirectionalLight;
 import com.badlogic.gdx.graphics.g3d.utils.CameraInputController;
 import com.badlogic.gdx.graphics.g3d.utils.ModelBuilder;
+import com.badlogic.gdx.math.Intersector;
+import com.badlogic.gdx.math.Plane;
 import com.badlogic.gdx.math.Quaternion;
 import com.badlogic.gdx.math.Vector3;
+import com.badlogic.gdx.math.collision.Ray;
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.Disposable;
 import com.lando.systems.rampartrampage.Const;
@@ -48,6 +51,8 @@ public class Scene implements Disposable {
     public ModelInstance selectorInstance;
     public Array<ModelInstance> modelInstances;
 
+    public Plane groundPlane;
+
 
     public Scene(GameState gameState) {
         this.gameState = gameState;
@@ -56,6 +61,7 @@ public class Scene implements Disposable {
         initializeGeometry();
     }
 
+    public final Vector3 mouseWorldIntersection = new Vector3();
     public void update(float delta) {
         camController.update();
 
@@ -69,8 +75,13 @@ public class Scene implements Disposable {
 
         transitionCamera.update(true);
 
-        selectorInstance.nodes.get(0).translation.set(gameState.inputHandler.mouse_world);
-        selectorInstance.nodes.get(0).translation.y = 0;
+        Intersector.intersectRayPlane(
+                currentCamera.getPickRay(Gdx.input.getX(), Gdx.input.getY()),
+                groundPlane, mouseWorldIntersection);
+        selectorInstance.nodes.get(0).translation.set(
+                (int) mouseWorldIntersection.x,
+                (int) mouseWorldIntersection.y,
+                (int) mouseWorldIntersection.z);
         selectorInstance.calculateTransforms();
     }
 
@@ -263,11 +274,19 @@ public class Scene implements Disposable {
         env.set(new ColorAttribute(ColorAttribute.AmbientLight, 0.4f, 0.4f, 0.4f, 1));
         env.add(new DirectionalLight().set(Color.PURPLE, -5, 5, 5));
         // ...
+
+        final Vector3 groundNormal = new Vector3(0,1,0);
+        final Vector3 groundCenter = new Vector3(0,0,0);
+        groundPlane = new Plane(groundNormal, groundCenter);
     }
 
     final Quaternion unit_quaternion = new Quaternion();
     final Vector3 unit_vector3 = new Vector3(1,1,1);
+    final Vector3 temp_vector3 = new Vector3();
     // TODO :
+    public void spawnBox(float x, float y, float z) {
+        this.spawnBox(temp_vector3.set(x,y,z));
+    }
     public void spawnBox(Vector3 position) {
         this.spawnBox(position, unit_vector3);
     }
@@ -280,11 +299,22 @@ public class Scene implements Disposable {
         Gdx.app.log("SPAWN_BOX", "pos: " + position.toString() + ", scale: " + scale.toString() + ", rot: " + rotation.toString());
 
         ModelInstance boxInstance = new ModelInstance(box);
-        boxInstance.nodes.get(0).translation.set(position);
+        boxInstance.nodes.get(0).translation.set(position.x + .5f, position.y + 0.5f, position.z + 0.5f);
         boxInstance.nodes.get(0).scale.set(scale);
         boxInstance.nodes.get(0).rotation.set(rotation);
         boxInstance.calculateTransforms();
         modelInstances.add(boxInstance);
     }
 
+    public void spawnBoxFromClick() {
+        spawnBox((int) mouseWorldIntersection.x, (int) mouseWorldIntersection.y, (int) mouseWorldIntersection.z);
+    }
+
+    final Vector3 intersection = new Vector3();
+    public void spawnBoxFromScreenOrigin() {
+        Intersector.intersectRayPlane(
+                currentCamera.getPickRay(currentCamera.viewportWidth / 2f, currentCamera.viewportHeight / 2f),
+                groundPlane, intersection);
+        spawnBox(intersection);
+    }
 }

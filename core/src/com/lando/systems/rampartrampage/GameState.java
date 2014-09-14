@@ -2,6 +2,7 @@ package com.lando.systems.rampartrampage;
 
 import aurelienribon.tweenengine.*;
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.Input;
 import com.badlogic.gdx.InputAdapter;
 import com.badlogic.gdx.Input.Keys;
 import com.badlogic.gdx.InputMultiplexer;
@@ -16,6 +17,7 @@ import com.lando.systems.rampartrampage.accessors.Vector2Accessor;
 import com.lando.systems.rampartrampage.accessors.Vector3Accessor;
 import com.lando.systems.rampartrampage.scene.Scene;
 import com.lando.systems.rampartrampage.util.InputHandler;
+import net.java.games.input.Component;
 
 /**
  * Brian Ploeckelman created on 9/1/2014.
@@ -43,6 +45,7 @@ public class GameState implements Disposable {
         scene = new Scene(this);
 
         initializeInput();
+        Gdx.input.setCursorCatched(true);
     }
 
     public void update(float delta) {
@@ -74,9 +77,7 @@ public class GameState implements Disposable {
                 switch (keycode) {
                     case Keys.ESCAPE: Gdx.app.exit(); break;
                     case Keys.TAB: scene.switchCameras(); break;
-                    case Keys.SPACE:
-                        scene.spawnBox(new Vector3(inputHandler.mouse_world.x, 0, inputHandler.mouse_world.z));
-                        break;
+//                    case Keys.SPACE: scene.spawnBoxFromClick(); break;
                 }
                 return false;
             }
@@ -88,6 +89,9 @@ public class GameState implements Disposable {
 
             @Override
             public boolean touchUp (int screenX, int screenY, int pointer, int button) {
+                if (button == Input.Buttons.RIGHT) {
+                    scene.spawnBoxFromClick();
+                }
                 return false;
             }
         };
